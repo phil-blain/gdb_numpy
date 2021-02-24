@@ -3,6 +3,7 @@ import subprocess
 import os
 from pathlib import Path
 import numpy as np
+import sys
 
 # Allow running from top of repository or from tests/
 path = os.fspath(Path(__file__).resolve().parent)
@@ -10,7 +11,15 @@ path = os.fspath(Path(__file__).resolve().parent)
 # Hide base test classes from unittest runner by nesting them
 class TestCases:
     class TestCppArray(unittest.TestCase):
-        pass
+        @classmethod
+        def setupClass(cls):
+            build_folder = "build"
+            fixtures_dir = os.path.join(path, "fixtures")
+            cls.build_dir = os.path.join(fixtures_dir, build_folder)
+            # Create build directory
+            # Hack: argparse accepts '-vv' for a 'store_const' '-v' argument, so use that to increase verbosity
+            cls.capture_make_output = False if ('-vv' in sys.argv) else True
+            subprocess.run(["make", build_folder], cwd=fixtures_dir, check=True, capture_output=cls.capture_make_output)
 
 class TestCppArray(TestCases.TestCppArray):
 
@@ -18,14 +27,10 @@ class TestCppArray(TestCases.TestCppArray):
 
     @classmethod
     def setUpClass(cls):
-        build_folder = "build"
-        fixtures_dir = os.path.join(path, "fixtures")
-        cls.build_dir = os.path.join(fixtures_dir, build_folder)
-        # Create build directory
-        subprocess.run(["make", build_folder], cwd=fixtures_dir, check=True, capture_output=True)
+        super().setupClass()
         cls.name = cls.__name__
         # Build test fixture
-        subprocess.run(["make", "-f", "../Makefile", cls.name], cwd=cls.build_dir, check=True, capture_output=True)
+        subprocess.run(["make", "-f", "../Makefile", cls.name], cwd=cls.build_dir, check=True, capture_output=cls.capture_make_output)
 
     def test_toarray(self):
         gdb = subprocess.run(["gdb", "-batch", "-x", "../setup.gdb", f"./{self.name}"], 
