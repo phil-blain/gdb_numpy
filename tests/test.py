@@ -43,8 +43,8 @@ class TestCases:
         
         @classmethod
         def write_makefile(cls):
-            makefile = dedent('''
-                CXX = g++
+            makefile = dedent(f'''
+                CXX = {os.getenv('CXX', 'g++')}
                 CXXFLAGS = -g -O0
 
                 APP=TestCppArray
