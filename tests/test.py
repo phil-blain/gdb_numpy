@@ -12,6 +12,9 @@ path = os.fspath(Path(__file__).resolve().parent)
 # Hide base test classes from unittest runner by nesting them
 class TestCases:
     class TestCppArray(unittest.TestCase):
+
+        success = 0
+
         @classmethod
         def setupClass(cls, name: str):
             cls.name = name
@@ -95,8 +98,6 @@ class TestCases:
             self.assertEqual(*gdb.stdout.splitlines()[-1:], '(5,)')
 
 class TestCppArray(TestCases.TestCppArray):
-
-    success = 0
 
     @classmethod
     def setUpClass(cls):
