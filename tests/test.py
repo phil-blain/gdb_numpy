@@ -47,7 +47,7 @@ class TestCases:
                 CXX = {os.getenv('CXX', 'g++')}
                 CXXFLAGS = -g -O0
 
-                APP=TestCppArray
+                APP={cls.name}
 
                 .PHONY: clean
 
