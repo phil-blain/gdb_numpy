@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import numpy as np
 import sys
+from textwrap import dedent
 
 # Allow running from top of repository or from tests/
 path = os.fspath(Path(__file__).resolve().parent)
@@ -14,12 +15,36 @@ class TestCases:
         @classmethod
         def setupClass(cls):
             build_folder = "build"
-            fixtures_dir = os.path.join(path, "fixtures")
-            cls.build_dir = os.path.join(fixtures_dir, build_folder)
+            cls.fixtures_dir = os.path.join(path, "fixtures")
+            cls.build_dir = os.path.join(cls.fixtures_dir, build_folder)
+            cls.write_makefile()
             # Create build directory
             # Hack: argparse accepts '-vv' for a 'store_const' '-v' argument, so use that to increase verbosity
             cls.capture_make_output = False if ('-vv' in sys.argv) else True
-            subprocess.run(["make", build_folder], cwd=fixtures_dir, check=True, capture_output=cls.capture_make_output)
+            subprocess.run(["make", build_folder], cwd=cls.fixtures_dir, check=True, capture_output=cls.capture_make_output)
+        
+        @classmethod
+        def write_makefile(cls):
+            makefile = dedent('''
+                CXX = g++
+                CXXFLAGS = -g -O0
+
+                APP=TestCppArray
+
+                .PHONY: clean
+
+                $(APP): ../$(APP).cpp
+                	$(CXX) $(CXXFLAGS) $< -o $@
+
+                build:
+                	mkdir $@
+
+                clean:
+                	rm -rf *.o *.dSYM $(APP)
+            ''').strip()
+
+            with open(os.path.join(cls.fixtures_dir, "Makefile"), "w") as f:
+                f.writelines(makefile)
 
 class TestCppArray(TestCases.TestCppArray):
 
