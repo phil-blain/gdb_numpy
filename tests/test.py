@@ -23,6 +23,7 @@ class TestCases:
             # Create build directory
             # Hack: argparse accepts '-vv' for a 'store_const' '-v' argument, so use that to increase verbosity
             cls.capture_make_output = False if ('-vv' in sys.argv) else True
+            cls.capture_make_stdout = None if ('-vv' in sys.argv) else subprocess.PIPE
             subprocess.run(["make", build_folder], cwd=cls.fixtures_dir, check=True, capture_output=cls.capture_make_output)
         
         @classmethod
@@ -90,7 +91,16 @@ class TestCppArray(TestCases.TestCppArray):
         super().setupClass()
         cls.name = cls.__name__
         # Build test fixture
-        subprocess.run(["make", "-f", "../Makefile", cls.name], cwd=cls.build_dir, check=True, capture_output=cls.capture_make_output)
+        try:
+            subprocess.run(["make", "-f", "../Makefile", cls.name], cwd=cls.build_dir, text=True,
+                           check=True, stdout=cls.capture_make_stdout, stderr=subprocess.PIPE)
+        except subprocess.CalledProcessError as e:
+            # Monkey-patch CalledProcessError.__str__ to also show stderr
+            orig_str = subprocess.CalledProcessError.__str__
+            def verbose_str(self: subprocess.CalledProcessError):
+                return orig_str(self) + f"\nstderr was: {self.stderr}"
+            subprocess.CalledProcessError.__str__  = verbose_str
+            raise
 
 if __name__ == '__main__':
     unittest.main()
