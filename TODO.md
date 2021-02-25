@@ -8,9 +8,7 @@
   - std::vector
   - std::vector<std::vector>
 
-- test more / all data types 
-
-- write the C++ test code, Makefile and GDB command files in the Python code 
+- test more / all data types
 
 # Features
 - Fortran

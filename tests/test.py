@@ -18,6 +18,8 @@ class TestCases:
             cls.fixtures_dir = os.path.join(path, "fixtures")
             cls.build_dir = os.path.join(cls.fixtures_dir, build_folder)
             cls.write_makefile()
+            cls.ext = ".cpp"
+            cls.write_source_code()
             # Create build directory
             # Hack: argparse accepts '-vv' for a 'store_const' '-v' argument, so use that to increase verbosity
             cls.capture_make_output = False if ('-vv' in sys.argv) else True
@@ -41,10 +43,26 @@ class TestCases:
 
                 clean:
                 	rm -rf *.o *.dSYM $(APP)
-            ''').strip()
+            ''').lstrip()
 
             with open(os.path.join(cls.fixtures_dir, "Makefile"), "w") as f:
                 f.writelines(makefile)
+
+        @classmethod
+        def write_source_code(cls):
+            code = dedent('''
+            void here() {};
+
+            int main() {
+                const int size = 5;
+                double array[size] = {1.0, 2.0, 3.0, 4.0, 5.0};
+                here();
+                return 0;
+            }
+            ''').lstrip()
+
+            with open(os.path.join(cls.fixtures_dir, cls.__name__ + cls.ext), "w") as f:
+                f.writelines(code)
 
 class TestCppArray(TestCases.TestCppArray):
 
