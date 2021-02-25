@@ -89,13 +89,15 @@ class TestCases:
         def test_dtype(self):
             gdb = subprocess.run(["gdb", "-batch", "-x", "../setup.gdb", "-ex", "python print(array.dtype)", f"./{self.name}"], 
                                  cwd=self.build_dir, text=True, capture_output=True)
-            # Check last line of GDB output
-            self.assertEqual(*gdb.stdout.splitlines()[-1:], 'float64')
+            self.assertEqual(get_last_line(gdb.stdout), 'float64')
 
         def test_shape(self):
             gdb = subprocess.run(["gdb", "-batch", "-x", "../setup.gdb", "-ex", "python print(array.shape)", f"./{self.name}"], 
                                  cwd=self.build_dir, text=True, capture_output=True)
-            self.assertEqual(*gdb.stdout.splitlines()[-1:], '(5,)')
+            self.assertEqual(get_last_line(gdb.stdout), '(5,)')
+
+def get_last_line(lines: str) -> str:
+    return lines.splitlines()[-1]
 
 class TestCppArray(TestCases.TestCppArray):
 
