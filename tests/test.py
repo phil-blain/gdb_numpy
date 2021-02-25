@@ -13,7 +13,8 @@ path = os.fspath(Path(__file__).resolve().parent)
 class TestCases:
     class TestCppArray(unittest.TestCase):
         @classmethod
-        def setupClass(cls):
+        def setupClass(cls, name: str):
+            cls.name = name
             build_folder = "build"
             cls.fixtures_dir = os.path.join(path, "fixtures")
             cls.build_dir = os.path.join(cls.fixtures_dir, build_folder)
@@ -25,6 +26,17 @@ class TestCases:
             cls.capture_make_output = False if ('-vv' in sys.argv) else True
             cls.capture_make_stdout = None if ('-vv' in sys.argv) else subprocess.PIPE
             subprocess.run(["make", build_folder], cwd=cls.fixtures_dir, check=True, capture_output=cls.capture_make_output)
+            # Build test fixture
+            try:
+                subprocess.run(["make", "-f", "../Makefile", cls.name], cwd=cls.build_dir, text=True,
+                               check=True, stdout=cls.capture_make_stdout, stderr=subprocess.PIPE)
+            except subprocess.CalledProcessError as e:
+                # Monkey-patch CalledProcessError.__str__ to also show stderr
+                orig_str = subprocess.CalledProcessError.__str__
+                def verbose_str(self: subprocess.CalledProcessError):
+                    return orig_str(self) + f"\nstderr was: {self.stderr}"
+                subprocess.CalledProcessError.__str__  = verbose_str
+                raise
         
         @classmethod
         def write_makefile(cls):
@@ -88,19 +100,7 @@ class TestCppArray(TestCases.TestCppArray):
 
     @classmethod
     def setUpClass(cls):
-        super().setupClass()
-        cls.name = cls.__name__
-        # Build test fixture
-        try:
-            subprocess.run(["make", "-f", "../Makefile", cls.name], cwd=cls.build_dir, text=True,
-                           check=True, stdout=cls.capture_make_stdout, stderr=subprocess.PIPE)
-        except subprocess.CalledProcessError as e:
-            # Monkey-patch CalledProcessError.__str__ to also show stderr
-            orig_str = subprocess.CalledProcessError.__str__
-            def verbose_str(self: subprocess.CalledProcessError):
-                return orig_str(self) + f"\nstderr was: {self.stderr}"
-            subprocess.CalledProcessError.__str__  = verbose_str
-            raise
+        super().setupClass(name=cls.__name__)
 
 if __name__ == '__main__':
     unittest.main()
