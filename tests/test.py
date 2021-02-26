@@ -18,6 +18,7 @@ class TestCases:
         @classmethod
         def setupClass(cls, name: str):
             cls.name = name
+            cls.gdb_command = ["gdb", "-batch", "-x", "../setup.gdb", "-se", f"./{cls.name}"]
             build_folder = "build"
             cls.fixtures_dir = os.path.join(path, "fixtures")
             cls.build_dir = os.path.join(cls.fixtures_dir, build_folder)
@@ -81,18 +82,18 @@ class TestCases:
                 f.writelines(code)
 
         def test_toarray(self):
-            gdb = subprocess.run(["gdb", "-batch", "-x", "../setup.gdb", f"./{self.name}"], 
+            gdb = subprocess.run(self.gdb_command, 
                                  cwd=self.build_dir, text=True, capture_output=True)
             self.longMessage = False
             self.assertEqual(gdb.returncode, self.success, msg=f"GDB subprocess failed: {gdb.stderr}")
 
         def test_dtype(self):
-            gdb = subprocess.run(["gdb", "-batch", "-x", "../setup.gdb", "-ex", "python print(array.dtype)", f"./{self.name}"], 
+            gdb = subprocess.run(self.gdb_command + ["-ex", "python print(array.dtype)"],
                                  cwd=self.build_dir, text=True, capture_output=True)
             self.assertEqual(get_last_line(gdb.stdout), 'float64')
 
         def test_shape(self):
-            gdb = subprocess.run(["gdb", "-batch", "-x", "../setup.gdb", "-ex", "python print(array.shape)", f"./{self.name}"], 
+            gdb = subprocess.run(self.gdb_command + ["-ex", "python print(array.shape)"],
                                  cwd=self.build_dir, text=True, capture_output=True)
             self.assertEqual(get_last_line(gdb.stdout), '(5,)')
 
