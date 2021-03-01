@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import sys
 from textwrap import dedent
-from typing import Mapping
+from typing import Mapping, Tuple
 
 # Allow running from top of repository or from tests/
 path = os.fspath(Path(__file__).resolve().parent)
@@ -17,9 +17,10 @@ class TestCases:
         success = 0
 
         @classmethod
-        def setupClass(cls, name: str, types: Mapping[str, str], decl: str):
+        def setupClass(cls, name: str, types: Mapping[str, str], decl: str, shape: Tuple[int, ...]):
             cls.name = name
             cls.types = types
+            cls.shape = shape
             cls.gdb_command = ["gdb", "-batch", "-x", "../setup.gdb", "-se", f"./{cls.name}"]
             build_folder = "build"
             cls.fixtures_dir = os.path.join(path, "fixtures")
@@ -96,16 +97,17 @@ class TestCases:
         def test_shape(self):
             gdb = subprocess.run(self.gdb_command + ["-ex", "python print(array.shape)"],
                                  cwd=self.build_dir, text=True, capture_output=True)
-            self.assertEqual(get_last_line(gdb.stdout), '(5,)')
+            self.assertEqual(get_last_line(gdb.stdout), str(self.shape))
 
     class TestCppArray1D(TestCppArray):
         @classmethod
         def setupClass(cls, name: str, types: Mapping[str, str]):
+            shape = (5,)
             decl = f'''
-                    const int size = 5;
+                    const int size = {shape[0]};
                     {types['native']} array[size] = {{1.0, 2.0, 3.0, 4.0, 5.0}};
             '''.strip()
-            super().setupClass(name, types, decl)
+            super().setupClass(name, types, decl, shape)
 
 def get_last_line(lines: str) -> str:
     return lines.splitlines()[-1]
