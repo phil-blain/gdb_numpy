@@ -102,11 +102,18 @@ class TestCases:
 def get_last_line(lines: str) -> str:
     return lines.splitlines()[-1]
 
-class TestCppArray(TestCases.TestCppArray):
+class TestCppArrayDouble(TestCases.TestCppArray):
 
     @classmethod
     def setUpClass(cls):
         types = {'native': 'double', 'numpy': 'float64'}
+        super().setupClass(name=cls.__name__, types=types)
+
+class TestCppArrayFloat(TestCases.TestCppArray):
+
+    @classmethod
+    def setUpClass(cls):
+        types = {'native': 'float', 'numpy': 'float32'}
         super().setupClass(name=cls.__name__, types=types)
 
 if __name__ == '__main__':
