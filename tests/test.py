@@ -10,6 +10,8 @@ from typing import Mapping, Tuple
 # Allow running from top of repository or from tests/
 path = os.fspath(Path(__file__).resolve().parent)
 
+cpp_double = {'native': 'double', 'numpy': 'float64'}
+
 # Hide base test classes from unittest runner by nesting them
 class TestCases:
     class TestCppArray(unittest.TestCase):
@@ -116,7 +118,7 @@ class TestCppArrayDouble(TestCases.TestCppArray1D):
 
     @classmethod
     def setUpClass(cls):
-        types = {'native': 'double', 'numpy': 'float64'}
+        types = cpp_double
         super().setupClass(name=cls.__name__, types=types)
 
 class TestCppArrayFloat(TestCases.TestCppArray1D):
@@ -130,7 +132,7 @@ class TestCppArray2D(TestCases.TestCppArray):
 
     @classmethod
     def setUpClass(cls):
-        types = {'native': 'double', 'numpy': 'float64'}
+        types = cpp_double
         shape = (2,3)
         decl = f'''
                     const int rows = {shape[0]};
