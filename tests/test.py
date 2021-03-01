@@ -126,5 +126,18 @@ class TestCppArrayFloat(TestCases.TestCppArray1D):
         types = {'native': 'float', 'numpy': 'float32'}
         super().setupClass(name=cls.__name__, types=types)
 
+class TestCppArray2D(TestCases.TestCppArray):
+
+    @classmethod
+    def setUpClass(cls):
+        types = {'native': 'double', 'numpy': 'float64'}
+        shape = (2,3)
+        decl = f'''
+                    const int rows = {shape[0]};
+                    const int cols = {shape[1]};
+                    {types['native']} array[rows][cols] = {{}};
+        '''.strip()
+        super().setupClass(name=cls.__name__, types=types, decl=decl, shape=shape)
+
 if __name__ == '__main__':
     unittest.main()
