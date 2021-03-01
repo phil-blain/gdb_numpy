@@ -17,7 +17,7 @@ class TestCases:
         success = 0
 
         @classmethod
-        def setupClass(cls, name: str, types: Mapping[str, str]):
+        def setupClass(cls, name: str, types: Mapping[str, str], decl: str):
             cls.name = name
             cls.types = types
             cls.gdb_command = ["gdb", "-batch", "-x", "../setup.gdb", "-se", f"./{cls.name}"]
@@ -26,7 +26,7 @@ class TestCases:
             cls.build_dir = os.path.join(cls.fixtures_dir, build_folder)
             cls.write_makefile()
             cls.ext = ".cpp"
-            cls.write_source_code()
+            cls.write_source_code(decl)
             # Create build directory
             # Hack: argparse accepts '-vv' for a 'store_const' '-v' argument, so use that to increase verbosity
             cls.capture_make_output = False if ('-vv' in sys.argv) else True
@@ -68,16 +68,15 @@ class TestCases:
                 f.writelines(makefile)
 
         @classmethod
-        def write_source_code(cls):
+        def write_source_code(cls, decl: str):
             code = dedent(f'''
-            void here() {{}};
+                void here() {{}};
 
-            int main() {{
-                const int size = 5;
-                {cls.types['native']} array[size] = {{1.0, 2.0, 3.0, 4.0, 5.0}};
-                here();
-                return 0;
-            }}
+                int main() {{
+                    {decl}
+                    here();
+                    return 0;
+                }}
             ''').lstrip()
 
             with open(os.path.join(cls.fixtures_dir, cls.__name__ + cls.ext), "w") as f:
@@ -99,17 +98,26 @@ class TestCases:
                                  cwd=self.build_dir, text=True, capture_output=True)
             self.assertEqual(get_last_line(gdb.stdout), '(5,)')
 
+    class TestCppArray1D(TestCppArray):
+        @classmethod
+        def setupClass(cls, name: str, types: Mapping[str, str]):
+            decl = f'''
+                    const int size = 5;
+                    {types['native']} array[size] = {{1.0, 2.0, 3.0, 4.0, 5.0}};
+            '''.strip()
+            super().setupClass(name, types, decl)
+
 def get_last_line(lines: str) -> str:
     return lines.splitlines()[-1]
 
-class TestCppArrayDouble(TestCases.TestCppArray):
+class TestCppArrayDouble(TestCases.TestCppArray1D):
 
     @classmethod
     def setUpClass(cls):
         types = {'native': 'double', 'numpy': 'float64'}
         super().setupClass(name=cls.__name__, types=types)
 
-class TestCppArrayFloat(TestCases.TestCppArray):
+class TestCppArrayFloat(TestCases.TestCppArray1D):
 
     @classmethod
     def setUpClass(cls):
