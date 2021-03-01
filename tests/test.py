@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import sys
 from textwrap import dedent
+from typing import Mapping
 
 # Allow running from top of repository or from tests/
 path = os.fspath(Path(__file__).resolve().parent)
@@ -16,8 +17,9 @@ class TestCases:
         success = 0
 
         @classmethod
-        def setupClass(cls, name: str):
+        def setupClass(cls, name: str, types: Mapping[str, str]):
             cls.name = name
+            cls.types = types
             cls.gdb_command = ["gdb", "-batch", "-x", "../setup.gdb", "-se", f"./{cls.name}"]
             build_folder = "build"
             cls.fixtures_dir = os.path.join(path, "fixtures")
@@ -67,15 +69,15 @@ class TestCases:
 
         @classmethod
         def write_source_code(cls):
-            code = dedent('''
-            void here() {};
+            code = dedent(f'''
+            void here() {{}};
 
-            int main() {
+            int main() {{
                 const int size = 5;
-                double array[size] = {1.0, 2.0, 3.0, 4.0, 5.0};
+                {cls.types['native']} array[size] = {{1.0, 2.0, 3.0, 4.0, 5.0}};
                 here();
                 return 0;
-            }
+            }}
             ''').lstrip()
 
             with open(os.path.join(cls.fixtures_dir, cls.__name__ + cls.ext), "w") as f:
@@ -90,7 +92,7 @@ class TestCases:
         def test_dtype(self):
             gdb = subprocess.run(self.gdb_command + ["-ex", "python print(array.dtype)"],
                                  cwd=self.build_dir, text=True, capture_output=True)
-            self.assertEqual(get_last_line(gdb.stdout), 'float64')
+            self.assertEqual(get_last_line(gdb.stdout), self.types['numpy'])
 
         def test_shape(self):
             gdb = subprocess.run(self.gdb_command + ["-ex", "python print(array.shape)"],
@@ -104,7 +106,8 @@ class TestCppArray(TestCases.TestCppArray):
 
     @classmethod
     def setUpClass(cls):
-        super().setupClass(name=cls.__name__)
+        types = {'native': 'double', 'numpy': 'float64'}
+        super().setupClass(name=cls.__name__, types=types)
 
 if __name__ == '__main__':
     unittest.main()
