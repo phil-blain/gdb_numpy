@@ -8,5 +8,4 @@ python
 import sys,os
 sys.path.append(os.path.join(*[os.pardir] * 3))
 import gdb_numpy
-array = gdb_numpy.to_array("array")
 end

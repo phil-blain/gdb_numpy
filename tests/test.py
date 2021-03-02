@@ -19,17 +19,18 @@ class TestCases:
         success = 0
 
         @classmethod
-        def setupClass(cls, name: str, types: Mapping[str, str], decl: str, shape: Tuple[int, ...]):
+        def setupClass(cls, name: str, types: Mapping[str, str], decl: str, shape: Tuple[int, ...], cleanup: str = ''):
             cls.name = name
             cls.types = types
             cls.shape = shape
-            cls.gdb_command = ["gdb", "-batch", "-x", "../setup.gdb", "-se", f"./{cls.name}"]
+            cls.gdb_command = ["gdb", "-batch", "-x", "../setup.gdb", "-se", f"./{cls.name}",
+                               "-ex", f"python array = gdb_numpy.to_array('array', {shape})"]
             build_folder = "build"
             cls.fixtures_dir = os.path.join(path, "fixtures")
             cls.build_dir = os.path.join(cls.fixtures_dir, build_folder)
             cls.write_makefile()
             cls.ext = ".cpp"
-            cls.write_source_code(decl)
+            cls.write_source_code(decl, cleanup)
             # Create build directory
             # Hack: argparse accepts '-vv' for a 'store_const' '-v' argument, so use that to increase verbosity
             cls.capture_make_output = False if ('-vv' in sys.argv) else True
@@ -51,7 +52,7 @@ class TestCases:
         def write_makefile(cls):
             makefile = dedent(f'''
                 CXX = {os.getenv('CXX', 'g++')}
-                CXXFLAGS = -g -O0
+                CXXFLAGS = -g -O0 -std=c++11
 
                 APP={cls.name}
 
@@ -71,13 +72,14 @@ class TestCases:
                 f.writelines(makefile)
 
         @classmethod
-        def write_source_code(cls, decl: str):
+        def write_source_code(cls, decl: str, cleanup: str):
             code = dedent(f'''
                 void here() {{}};
 
                 int main() {{
                     {decl}
                     here();
+                    {cleanup}
                     return 0;
                 }}
             ''').lstrip()
@@ -127,6 +129,16 @@ class TestCppArrayFloat(TestCases.TestCppArray1D):
     def setUpClass(cls):
         types = {'native': 'float', 'numpy': 'float32'}
         super().setupClass(name=cls.__name__, types=types)
+
+class TestCppArrayDynamic(TestCases.TestCppArray):
+
+    @classmethod
+    def setUpClass(cls):
+        types = cpp_double
+        shape = (5,)
+        decl = f"auto* array{{ new {types['native']}[{shape[0]}]{{}} }};"
+        cleanup = 'delete[] array;'
+        super().setupClass(name=cls.__name__, types=types, decl=decl, shape=shape, cleanup=cleanup)
 
 class TestCppArray2D(TestCases.TestCppArray):
 
