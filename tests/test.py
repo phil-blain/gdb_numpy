@@ -136,7 +136,7 @@ class TestCppArrayDynamic(TestCases.TestCppArray):
     def setUpClass(cls):
         types = cpp_double
         shape = (5,)
-        decl = f"auto* array{{ new {types['native']}[{shape[0]}]{{}} }};"
+        decl = f"auto array{{ new {types['native']}[{shape[0]}]{{}} }};"
         cleanup = 'delete[] array;'
         super().setupClass(name=cls.__name__, types=types, decl=decl, shape=shape, cleanup=cleanup)
 
@@ -152,6 +152,17 @@ class TestCppArray2D(TestCases.TestCppArray):
                     {types['native']} array[rows][cols] = {{}};
         '''.strip()
         super().setupClass(name=cls.__name__, types=types, decl=decl, shape=shape)
+
+class TestCppArrayDynamic2D(TestCases.TestCppArray):
+
+    @classmethod
+    def setUpClass(cls):
+        types = cpp_double
+        shape = (4,3)
+        decl = f"auto array{{ new {types['native']}[{shape[0]}][{shape[1]}]{{}} }};"
+        cleanup = 'delete[] array;'
+        super().setupClass(name=cls.__name__, types=types, decl=decl, shape=shape, cleanup=cleanup)
+
 
 if __name__ == '__main__':
     unittest.main()
