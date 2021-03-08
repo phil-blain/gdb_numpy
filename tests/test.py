@@ -1,6 +1,7 @@
 import unittest
 import subprocess
 import os
+import platform
 from pathlib import Path
 import numpy as np
 import sys
@@ -12,6 +13,19 @@ path = os.fspath(Path(__file__).resolve().parent)
 
 cpp_double = {'native': 'double', 'numpy': 'float64'}
 
+# Check if C++ compiler is GCC
+CXX = os.getenv('CXX', 'c++')
+cxx_vers = subprocess.run([CXX, "--version"], check=True, capture_output=True, text=True)
+cxx_is_gxx = True if "Free Software Foundation" in cxx_vers.stdout else False
+
+CXXFLAGS = ["-g", "-O0", "-std=c++11"]
+# With GCC, '-g' defaults to '-gdwarf-2 -gstrict-dwarf' on macOS, and with these
+# settings 'std::vector' is seen be GDB (and LLDB) as simply 'vector' so the regex to
+# detect this type does not work. Manually setting a higher DWARF version
+# fixes that.
+if platform.system() == "Darwin" and cxx_is_gxx:
+    CXXFLAGS.append("-gdwarf-4")
+
 # Hide base test classes from unittest runner by nesting them
 class TestCases:
     class TestCppArray(unittest.TestCase):
@@ -19,7 +33,7 @@ class TestCases:
         success = 0
 
         @classmethod
-        def setupClass(cls, name: str, types: Mapping[str, str], decl: str, shape: Tuple[int, ...], cleanup: str = ''):
+        def setupClass(cls, name: str, types: Mapping[str, str], decl: str, shape: Tuple[int, ...], cleanup: str = '', header: str = ''):
             cls.name = name
             cls.types = types
             cls.shape = shape
@@ -30,7 +44,7 @@ class TestCases:
             cls.build_dir = os.path.join(cls.fixtures_dir, build_folder)
             cls.write_makefile()
             cls.ext = ".cpp"
-            cls.write_source_code(decl, cleanup)
+            cls.write_source_code(decl, cleanup, header)
             # Create build directory
             # Hack: argparse accepts '-vv' for a 'store_const' '-v' argument, so use that to increase verbosity
             cls.capture_make_output = False if ('-vv' in sys.argv) else True
@@ -51,8 +65,8 @@ class TestCases:
         @classmethod
         def write_makefile(cls):
             makefile = dedent(f'''
-                CXX = {os.getenv('CXX', 'g++')}
-                CXXFLAGS = -g -O0 -std=c++11
+                CXX = {CXX}
+                CXXFLAGS = {" ".join(CXXFLAGS)}
 
                 APP={cls.name}
 
@@ -72,8 +86,11 @@ class TestCases:
                 f.writelines(makefile)
 
         @classmethod
-        def write_source_code(cls, decl: str, cleanup: str):
+        def write_source_code(cls, decl: str, cleanup: str, header: str):
             code = dedent(f'''
+
+                {header}
+
                 void here() {{}};
 
                 int main() {{
@@ -162,6 +179,17 @@ class TestCppArrayDynamic2D(TestCases.TestCppArray):
         decl = f"auto array{{ new {types['native']}[{shape[0]}][{shape[1]}]{{}} }};"
         cleanup = 'delete[] array;'
         super().setupClass(name=cls.__name__, types=types, decl=decl, shape=shape, cleanup=cleanup)
+
+@unittest.skipUnless(cxx_is_gxx, "Implementation is currently specific to libstdc++")
+class TestCppStdVector(TestCases.TestCppArray):
+
+    @classmethod
+    def setUpClass(cls):
+        types = cpp_double
+        header = '#include <vector>'
+        shape = (4,)
+        decl = f"std::vector<{types['native']}> array({shape[0]});"
+        super().setupClass(name=cls.__name__, types=types, decl=decl, shape=shape, header=header)
 
 
 if __name__ == '__main__':
