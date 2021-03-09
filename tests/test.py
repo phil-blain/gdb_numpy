@@ -196,6 +196,17 @@ class TestCppStdVector(TestCases.TestCppArray):
         decl = f"std::vector<{types['native']}> array({shape[0]});"
         super().setupClass(name=cls.__name__, types=types, decl=decl, shape=shape, header=header)
 
+@unittest.skipUnless(cxx_is_gxx, "Implementation is currently specific to libstdc++")
+class TestCppStdVectorStdVector(TestCases.TestCppArray):
+
+    @classmethod
+    def setUpClass(cls):
+        types = cpp_double
+        header = '#include <vector>'
+        shape = (6,4)
+        decl = f"std::vector<std::vector<{types['native']}>> array({shape[0]}, std::vector<{types['native']}>({shape[1]}));"
+        super().setupClass(name=cls.__name__, types=types, decl=decl, shape=shape, header=header)
+
 
 if __name__ == '__main__':
     unittest.main()
