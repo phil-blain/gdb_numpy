@@ -7,6 +7,7 @@ import numpy as np
 import sys
 from textwrap import dedent
 from typing import Mapping, Tuple
+import shlex
 
 # Allow running from top of repository or from tests/
 path = os.fspath(Path(__file__).resolve().parent)
@@ -37,8 +38,9 @@ class TestCases:
             cls.name = name
             cls.types = types
             cls.shape = shape
-            cls.gdb_command = ["gdb", "-batch", "-x", "../setup.gdb", "-se", f"./{cls.name}",
-                               "-ex", f"python array = gdb_numpy.to_array('array', {shape})"]
+            cls.gdb_command_interactive = ["gdb", "-x", "../setup.gdb", "-se", f"./{cls.name}",
+                                           "-ex", f"python array = gdb_numpy.to_array('array', {shape})"]
+            cls.gdb_command = cls.gdb_command_interactive + ["-batch"]
             build_folder = "build"
             cls.fixtures_dir = os.path.join(path, "fixtures")
             cls.build_dir = os.path.join(cls.fixtures_dir, build_folder)
@@ -70,13 +72,16 @@ class TestCases:
 
                 APP={cls.name}
 
-                .PHONY: clean
+                .PHONY: clean debug
 
                 $(APP): ../$(APP).cpp
                 	$(CXX) $(CXXFLAGS) $< -o $@
 
                 build:
                 	mkdir $@
+
+                debug:
+                	{' '.join(shlex.quote(arg) for arg in cls.gdb_command_interactive)}
 
                 clean:
                 	rm -rf *.o *.dSYM $(APP)
