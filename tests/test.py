@@ -34,12 +34,13 @@ class TestCases:
         success = 0
 
         @classmethod
-        def setupClass(cls, name: str, types: Mapping[str, str], decl: str, shape: Tuple[int, ...], cleanup: str = '', header: str = ''):
+        def setupClass(cls, name: str, types: Mapping[str, str], decl: str, shape: Tuple[int, ...], explicit_shape: bool = False, cleanup: str = '', header: str = ''):
             cls.name = name
             cls.types = types
             cls.shape = shape
+            to_array_args = f"'array', {shape}" if explicit_shape else "'array'"
             cls.gdb_command_interactive = ["gdb", "-x", "../setup.gdb", "-se", f"./{cls.name}",
-                                           "-ex", f"python array = gdb_numpy.to_array('array', {shape})"]
+                                           "-ex", f"python array = gdb_numpy.to_array({to_array_args})" ]
             cls.gdb_command = cls.gdb_command_interactive + ["-batch"]
             build_folder = "build"
             cls.fixtures_dir = os.path.join(path, "fixtures")
@@ -160,7 +161,7 @@ class TestCppArrayDynamic(TestCases.TestCppArray):
         shape = (5,)
         decl = f"auto array{{ new {types['native']}[{shape[0]}]{{}} }};"
         cleanup = 'delete[] array;'
-        super().setupClass(name=cls.__name__, types=types, decl=decl, shape=shape, cleanup=cleanup)
+        super().setupClass(name=cls.__name__, types=types, decl=decl, shape=shape, explicit_shape=True, cleanup=cleanup)
 
 class TestCppArray2D(TestCases.TestCppArray):
 
@@ -183,7 +184,7 @@ class TestCppArrayDynamic2D(TestCases.TestCppArray):
         shape = (4,3)
         decl = f"auto array{{ new {types['native']}[{shape[0]}][{shape[1]}]{{}} }};"
         cleanup = 'delete[] array;'
-        super().setupClass(name=cls.__name__, types=types, decl=decl, shape=shape, cleanup=cleanup)
+        super().setupClass(name=cls.__name__, types=types, decl=decl, shape=shape, explicit_shape=True, cleanup=cleanup)
 
 @unittest.skipUnless(cxx_is_gxx, "Implementation is currently specific to libstdc++")
 class TestCppStdVector(TestCases.TestCppArray):
