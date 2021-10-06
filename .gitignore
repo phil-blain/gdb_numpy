@@ -1,4 +1,4 @@
 *.pyc
 tests/fixtures/build
-tests/fixtures/Makefile
+tests/fixtures/*.mk
 tests/fixtures/*.cpp

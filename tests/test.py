@@ -54,7 +54,7 @@ class TestCases:
             subprocess.run(["make", build_folder], cwd=cls.fixtures_dir, check=True, capture_output=cls.capture_make_output)
             # Build test fixture
             try:
-                subprocess.run(["make", "-f", "../Makefile", cls.name], cwd=cls.build_dir, text=True,
+                subprocess.run(["make", "-f", f"../{cls.name}.mk", cls.name], cwd=cls.build_dir, text=True,
                                check=True, stdout=cls.capture_make_stdout, stderr=subprocess.PIPE)
             except subprocess.CalledProcessError as e:
                 # Monkey-patch CalledProcessError.__str__ to also show stderr
@@ -87,7 +87,7 @@ class TestCases:
                 	rm -rf *.o *.dSYM $(APP)
             ''').lstrip()
 
-            with open(os.path.join(cls.fixtures_dir, "Makefile"), "w") as f:
+            with open(os.path.join(cls.fixtures_dir, f"{cls.name}.mk"), "w") as f:
                 f.writelines(makefile)
 
         @classmethod
