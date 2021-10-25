@@ -38,10 +38,18 @@ class TestCases:
             cls.name = name
             cls.types = types
             cls.shape = shape
-            to_array_args = f"'array', {shape}" if explicit_shape else "'array'"
-            cls.gdb_command_interactive = ["gdb", "-x", "../setup.gdb", "-se", f"./{cls.name}",
-                                           "-ex", f"python array = gdb_numpy.to_array({to_array_args})" ]
+            cls.explicit_shape = explicit_shape
+            to_array_args_implicit = "'array'"
+            to_array_args_explicit = f"'array', {shape}"
+            gdb_command = ["gdb", "-x", "../setup.gdb", "-se", f"./{cls.name}", "-ex"]
+            py_command_no_args = "python array = gdb_numpy.to_array"
+            py_command_implicit = f"{py_command_no_args}({to_array_args_implicit})"
+            py_command_explicit = f"{py_command_no_args}({to_array_args_explicit})"
+            py_command = py_command_explicit if explicit_shape else py_command_implicit
+            cls.gdb_command_interactive = gdb_command + [py_command]
             cls.gdb_command = cls.gdb_command_interactive + ["-batch"]
+            if explicit_shape:
+                cls.gdb_command_throws = gdb_command + [py_command_implicit] + ["-batch"]
             build_folder = "build"
             cls.fixtures_dir = os.path.join(path, "fixtures")
             cls.build_dir = os.path.join(cls.fixtures_dir, build_folder)
@@ -115,6 +123,12 @@ class TestCases:
                                  cwd=self.build_dir, text=True, capture_output=True)
             self.longMessage = False
             self.assertEqual(gdb.returncode, self.success, msg=f"GDB subprocess failed: {gdb.stderr}")
+            if self.explicit_shape:
+                gdb = subprocess.run(self.gdb_command_throws,
+                                     cwd=self.build_dir, text=True, capture_output=True)
+                self.assertNotEqual(gdb.returncode, self.success, msg="GDB subprocess should have failed, but did not!")
+                exception = "ValueError"
+                self.assertTrue(exception in gdb.stderr, msg=f"Expected {exception} to be raised, but got: {gdb.stderr}")
 
         def test_dtype(self):
             gdb = subprocess.run(self.gdb_command + ["-ex", "python print(array.dtype)"],
