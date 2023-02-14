@@ -13,6 +13,7 @@ import numpy as np
 import itertools
 import functools
 import deref
+import operator
 
 #Maps to C/C++ numeric types into the corresponding data type in 
 #numpy
@@ -22,7 +23,8 @@ _type_list = {'unsigned char': np.uint8,
               'short': np.int16,
               'int': np.int32, 
               'float': np.float32,
-              'double': np.float64}
+              'double': np.float64,
+              'REAL(8)': np.float64}
 
 #A regular expression used for checking the data type in C/C++
 _type_exp = '('+functools.reduce(lambda x,y: x+'|'+y,_type_list.keys())+')'
@@ -32,7 +34,7 @@ _type_exp = '('+functools.reduce(lambda x,y: x+'|'+y,_type_list.keys())+')'
 _ptr_list = [deref.DeRefPtr, deref.DeRefArr]
 #The lis of classes that provides utilities to dereference container 
 #types. These are defined in the module 'deref'.
-_container_list = [deref.DeRefVec]
+_container_list = [deref.DeRefVec, deref.DeRefMyMatrix]
 
 
 def to_array(var,shape = None):
@@ -92,18 +94,27 @@ def to_array(var,shape = None):
     A bound is needed for each dimension 
     corresponding to a * or []."
     """
-    val = gdb.parse_and_eval(var)
+    if type(var) is str:
+      val = gdb.parse_and_eval(var)
+    elif type(var) is gdb.Value:
+      val = var
     deref_func, arg_no, bounds, dtype = _get_deref_funcs(val, shape)
-    ranges = [range(bound) for bound in bounds]
-    indices = itertools.product(*ranges)
+    ranges = [range(1,bound+1) for bound in bounds]
+    indices = itertools.product(*reversed(ranges))
     narray = np.zeros(bounds, dtype = _type_list[dtype])
     for index in indices:
-        start_ind = 0; val = gdb.parse_and_eval(var)
+        start_ind = 0;
+        if type(var) is str:
+          val = gdb.parse_and_eval(var)
+        elif type(var) is gdb.Value:
+          val = var
         for func, arg_n in zip(deref_func,arg_no):
             end_ind = start_ind + arg_n
+            #import pdb; pdb.set_trace()
             val = func(val,index[start_ind:end_ind])
             start_ind = end_ind
-        narray[index] = _type_list[dtype](val)    
+        index_zero_based = tuple(map(operator.sub, index, (1,1)))
+        narray[index_zero_based[::-1]] = _type_list[dtype](val)
     return narray
 
 def _get_deref_funcs(val,shape = None):

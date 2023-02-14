@@ -158,3 +158,17 @@ class DeRefVec(DeRefBase):
         v_start = val['_M_impl']['_M_start']
         v_end = val['_M_impl']['_M_finish']
         self.bounds = [v_end - v_start]
+
+class DeRefMyMatrix(DeRefBase):
+
+    pattern = re.compile('^REAL\\(8\\) \\((\\d+),(\\d+)\\)')
+
+    def __init__(self, val, shape_ind, shape):
+        super(DeRefMyMatrix, self).__init__(val, shape_ind, shape)
+        self.val = self.deref(val, [1,1]) #Updates to a dereferenced type
+        arr_type = str(val.type.unqualified().strip_typedefs())
+        match = self.pattern.search(arr_type)
+        self.bounds = [int(match.group(1)), int(match.group(2))] #The dimensions of the matrix
+
+    def deref(self, val, indices):
+        return val[indices[0]][indices[1]]
