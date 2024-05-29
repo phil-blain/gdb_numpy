@@ -33,7 +33,7 @@ _type_exp = "(" + functools.reduce(lambda x, y: x + "|" + y, _type_list.keys()) 
 _ptr_list = [deref.DeRefPtr, deref.DeRefArr]
 # The lis of classes that provides utilities to dereference container
 # types. These are defined in the module 'deref'.
-_container_list = [deref.DeRefVec]
+_container_list = [deref.DeRefVec, deref.DeRefBlitz]
 
 
 def to_array(var, shape=None):

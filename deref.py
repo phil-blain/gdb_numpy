@@ -165,3 +165,14 @@ class DeRefVec(DeRefBase):
         v_start = val["_M_impl"]["_M_start"]
         v_end = val["_M_impl"]["_M_finish"]
         self.bounds = [v_end - v_start]
+
+class DeRefBlitz(DeRefPtr):
+    """
+    Provides functionalities for dereferencing Blitz types
+    """
+
+    # Regular expressions for Blitz types
+    pattern = re.compile("^blitz::MemoryBlockReference")
+
+    def __init__(self, val, shape_ind, shape):
+        super(DeRefBlitz, self).__init__(val, shape_ind, shape)
