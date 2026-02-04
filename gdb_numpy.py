@@ -24,6 +24,8 @@ _type_list = {'unsigned char': np.uint8,
               'int': np.int32, 
               'float': np.float32,
               'double': np.float64,
+              'INTEGER(4)': np.int32,
+              'REAL(4)': np.float32,
               'REAL(8)': np.float64}
 
 #A regular expression used for checking the data type in C/C++
