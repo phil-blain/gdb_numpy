@@ -161,7 +161,7 @@ class DeRefVec(DeRefBase):
 
 class DeRefMyMatrix(DeRefBase):
 
-    pattern = re.compile('^REAL\\(8\\) \\((\\d+),(\\d+)\\)')
+    pattern = re.compile('^REAL\*8 \\((\\d+),(\\d+)\\)')
 
     def __init__(self, val, shape_ind, shape):
         super(DeRefMyMatrix, self).__init__(val, shape_ind, shape)
